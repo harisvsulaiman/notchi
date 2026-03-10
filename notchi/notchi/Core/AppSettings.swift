@@ -1,11 +1,23 @@
 import Foundation
 
+enum DisplayMode: String {
+    case notch
+    case pill
+}
+
+enum PillCorner: String {
+    case bottomRight
+    case bottomLeft
+}
+
 struct AppSettings {
     private static let notificationSoundKey = "notificationSound"
     private static let isMutedKey = "isMuted"
     private static let previousSoundKey = "previousNotificationSound"
     private static let isUsageEnabledKey = "isUsageEnabled"
     private static let emotionAnalysisModeKey = "emotionAnalysisMode"
+    private static let displayModeKey = "displayMode"
+    private static let pillCornerKey = "pillCorner"
 
     static var emotionAnalysisMode: EmotionAnalysisMode {
         get {
@@ -17,6 +29,32 @@ struct AppSettings {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: emotionAnalysisModeKey)
+        }
+    }
+
+    static var displayMode: DisplayMode {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: displayModeKey),
+                  let mode = DisplayMode(rawValue: rawValue) else {
+                return .notch
+            }
+            return mode
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: displayModeKey)
+        }
+    }
+
+    static var pillCorner: PillCorner {
+        get {
+            guard let rawValue = UserDefaults.standard.string(forKey: pillCornerKey),
+                  let corner = PillCorner(rawValue: rawValue) else {
+                return .bottomRight
+            }
+            return corner
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: pillCornerKey)
         }
     }
 

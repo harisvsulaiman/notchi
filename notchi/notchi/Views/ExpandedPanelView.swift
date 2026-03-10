@@ -35,7 +35,7 @@ struct ExpandedPanelView: View {
     }
 
     private var showIndicator: Bool {
-        state.task == .working || state.task == .compacting || state.task == .waiting
+        state.task == .working || state.task == .compacting || state.task == .waiting || state.task == .planning
     }
 
     private var hasActivity: Bool {
@@ -95,8 +95,6 @@ struct ExpandedPanelView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 if !isActivityCollapsed {
-                    Divider().background(Color.white.opacity(0.08))
-
                     SessionListView(
                         sessions: sessionStore.sortedSessions,
                         selectedSessionId: sessionStore.selectedSessionId,
@@ -140,7 +138,6 @@ struct ExpandedPanelView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 if hasActivity {
-                    Divider().background(Color.white.opacity(0.08))
                     activitySection
                 } else if !isActivityCollapsed {
                     Spacer()
@@ -265,24 +262,61 @@ struct ExpandedPanelView: View {
     }
 }
 
-struct PanelHeaderButton: View {
-    let sfSymbol: String
+struct PanelToolbar: View {
+    let isPinned: Bool
+    let isMuted: Bool
+    let showBackButton: Bool
+    let onPin: () -> Void
+    let onMute: () -> Void
+    let onSettings: () -> Void
+    let onClose: () -> Void
+    let onBack: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if showBackButton {
+                Button(action: onBack) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Back")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 10)
+                    .frame(height: 32)
+                    .background(.white.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            } else {
+                ToolbarButton(icon: isPinned ? "pin.fill" : "pin", action: onPin)
+                ToolbarButton(icon: isMuted ? "bell.slash" : "bell", action: onMute)
+            }
+            Spacer()
+            ToolbarButton(icon: "gearshape", action: onSettings)
+            ToolbarButton(icon: "xmark", action: onClose)
+        }
+        .padding(.horizontal, 12)
+    }
+}
+
+private struct ToolbarButton: View {
+    let icon: String
     let action: () -> Void
     @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: sfSymbol)
+            Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white.opacity(0.7))
                 .frame(width: 32, height: 32)
-                .background(isHovered ? TerminalColors.hoverBackground : TerminalColors.subtleBackground)
+                .background(isHovered ? .white.opacity(0.12) : .white.opacity(0.08))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        .onHover { isHovered = $0 }
     }
 }
 

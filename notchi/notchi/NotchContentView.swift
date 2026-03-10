@@ -170,26 +170,16 @@ struct NotchContentView: View {
             }
 
             if isExpanded {
-                HStack {
-                    if shouldShowBackButton {
-                        backButton
-                            .padding(.leading, 15)
-                    } else {
-                        HStack(spacing: 8) {
-                            PanelHeaderButton(
-                                sfSymbol: panelManager.isPinned ? "pin.fill" : "pin",
-                                action: { panelManager.togglePin() }
-                            )
-                            PanelHeaderButton(
-                                sfSymbol: isMuted ? "bell.slash" : "bell",
-                                action: toggleMute
-                            )
-                        }
-                        .padding(.leading, 12)
-                    }
-                    Spacer()
-                    headerButtons
-                }
+                PanelToolbar(
+                    isPinned: panelManager.isPinned,
+                    isMuted: isMuted,
+                    showBackButton: shouldShowBackButton,
+                    onPin: { panelManager.togglePin() },
+                    onMute: toggleMute,
+                    onSettings: { showingPanelSettings = true },
+                    onClose: { panelManager.collapse() },
+                    onBack: goBack
+                )
                 .padding(.top, 4)
                 .padding(.horizontal, 8)
                 .frame(width: NotchConstants.expandedPanelSize.width - 48)
@@ -197,26 +187,6 @@ struct NotchContentView: View {
         }
     }
 
-    private var headerButtons: some View {
-        HStack(spacing: 8) {
-            PanelHeaderButton(sfSymbol: "gearshape", action: { showingPanelSettings = true })
-            PanelHeaderButton(sfSymbol: "xmark", action: { panelManager.collapse() })
-        }
-        .padding(.trailing, 8)
-    }
-
-    private var backButton: some View {
-        Button(action: goBack) {
-            HStack(spacing: 5) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .semibold))
-                Text("Back")
-                    .font(.system(size: 12, weight: .medium))
-            }
-            .foregroundColor(.white.opacity(0.7))
-        }
-        .buttonStyle(.plain)
-    }
 
     private func goBack() {
         if showingPanelSettings {

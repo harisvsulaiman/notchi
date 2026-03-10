@@ -191,6 +191,7 @@ struct WorkingIndicatorView: View {
         switch state.task {
         case .compacting: return "Compacting"
         case .waiting:    return "Waiting"
+        case .planning:   return "Planning"
         default:          return "Clanking"
         }
     }

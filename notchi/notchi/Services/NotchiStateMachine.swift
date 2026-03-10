@@ -105,13 +105,14 @@ final class NotchiStateMachine {
                 return
             }
 
-            if result.interrupted && session.task == .working {
+            if result.interrupted && (session.task == .working || session.task == .planning) {
                 session.updateTask(.idle)
                 session.updateProcessingState(isProcessing: false)
             } else if session.task == .waiting,
                       Date().timeIntervalSince(session.lastActivity) > Self.waitingClearGuard {
                 session.clearPendingQuestions()
-                session.updateTask(.working)
+                let inPlanMode = session.permissionMode == "plan"
+                session.updateTask(inPlanMode ? .planning : .working)
             }
 
             pendingSyncTasks.removeValue(forKey: sessionId)

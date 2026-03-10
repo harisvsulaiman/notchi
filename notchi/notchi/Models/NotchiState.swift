@@ -1,7 +1,7 @@
 import AppKit
 
 enum NotchiTask: String, CaseIterable {
-    case idle, working, sleeping, compacting, waiting
+    case idle, working, sleeping, compacting, waiting, planning
 
     var animationFPS: Double {
         switch self {
@@ -9,6 +9,7 @@ enum NotchiTask: String, CaseIterable {
         case .sleeping: return 2.0
         case .idle, .waiting: return 3.0
         case .working: return 4.0
+        case .planning: return 3.0
         }
     }
 
@@ -16,10 +17,11 @@ enum NotchiTask: String, CaseIterable {
 
     var bobDuration: Double {
         switch self {
-        case .sleeping:   return 4.0
-        case .idle, .waiting: return 1.5
-        case .working:    return 0.4
-        case .compacting: return 0.5
+        case .sleeping:        return 4.0
+        case .idle, .waiting:  return 1.5
+        case .working:         return 0.4
+        case .compacting:      return 0.5
+        case .planning:        return 2.0
         }
     }
 
@@ -29,12 +31,13 @@ enum NotchiTask: String, CaseIterable {
         case .idle:                  return 1.5
         case .waiting:               return 0.5
         case .working:               return 0.5
+        case .planning:              return 0.8
         }
     }
 
     var canWalk: Bool {
         switch self {
-        case .sleeping, .compacting, .waiting:
+        case .sleeping, .compacting, .waiting, .planning:
             return false
         case .idle, .working:
             return true
@@ -48,15 +51,17 @@ enum NotchiTask: String, CaseIterable {
         case .sleeping:   return "Sleeping"
         case .compacting: return "Compacting..."
         case .waiting:    return "Waiting..."
+        case .planning:   return "Planning..."
         }
     }
 
     var walkFrequencyRange: ClosedRange<Double> {
         switch self {
-        case .sleeping, .waiting: return 30.0...60.0
-        case .idle:               return 8.0...15.0
-        case .working:            return 5.0...12.0
-        case .compacting:         return 15.0...25.0
+        case .sleeping, .waiting:  return 30.0...60.0
+        case .idle:                return 8.0...15.0
+        case .working:             return 5.0...12.0
+        case .compacting:          return 15.0...25.0
+        case .planning:            return 20.0...40.0
         }
     }
 
@@ -92,7 +97,8 @@ struct NotchiState: Equatable {
     var task: NotchiTask
     var emotion: NotchiEmotion = .neutral
 
-    /// Resolves the sprite sheet name with fallback chain: exact emotion -> sad (for sob) -> neutral.
+    /// Resolves the sprite sheet name with fallback chain:
+    /// exact emotion -> sad (for sob) -> neutral -> working fallback (for planning).
     var spriteSheetName: String {
         let name = "\(task.spritePrefix)_\(emotion.rawValue)"
         if NSImage(named: name) != nil { return name }
@@ -100,7 +106,15 @@ struct NotchiState: Equatable {
             let sadName = "\(task.spritePrefix)_sad"
             if NSImage(named: sadName) != nil { return sadName }
         }
-        return "\(task.spritePrefix)_neutral"
+        let neutralName = "\(task.spritePrefix)_neutral"
+        if NSImage(named: neutralName) != nil { return neutralName }
+        // Planning falls back to working sprites if no planning sprites exist
+        if task == .planning {
+            let workingName = "working_\(emotion.rawValue)"
+            if NSImage(named: workingName) != nil { return workingName }
+            return "working_neutral"
+        }
+        return neutralName
     }
     var animationFPS: Double { task.animationFPS }
     var bobDuration: Double { task.bobDuration }
@@ -123,4 +137,5 @@ struct NotchiState: Equatable {
     static let sleeping = NotchiState(task: .sleeping)
     static let compacting = NotchiState(task: .compacting)
     static let waiting = NotchiState(task: .waiting)
+    static let planning = NotchiState(task: .planning)
 }

@@ -59,6 +59,8 @@ final class SessionStore {
             session.updatePermissionMode(mode)
         }
 
+        let inPlanMode = session.permissionMode == "plan"
+
         switch event.event {
         case "UserPromptSubmit":
             if let prompt = event.userPrompt {
@@ -69,7 +71,7 @@ final class SessionStore {
             if Self.isLocalSlashCommand(event.userPrompt) {
                 session.updateTask(.idle)
             } else {
-                session.updateTask(.working)
+                session.updateTask(inPlanMode ? .planning : .working)
             }
 
         case "PreCompact":
@@ -77,7 +79,7 @@ final class SessionStore {
 
         case "SessionStart":
             if isProcessing {
-                session.updateTask(.working)
+                session.updateTask(inPlanMode ? .planning : .working)
             }
 
         case "PreToolUse":
@@ -86,9 +88,13 @@ final class SessionStore {
             if event.tool == "AskUserQuestion" {
                 session.updateTask(.waiting)
                 session.setPendingQuestions(Self.parseQuestions(from: event.toolInput))
+            } else if event.tool == "EnterPlanMode" {
+                session.updateTask(.planning)
+            } else if event.tool == "ExitPlanMode" {
+                session.updateTask(.working)
             } else {
                 session.clearPendingQuestions()
-                session.updateTask(.working)
+                session.updateTask(inPlanMode ? .planning : .working)
             }
 
         case "PermissionRequest":
@@ -100,7 +106,13 @@ final class SessionStore {
             let success = event.status != "error"
             session.recordPostToolUse(tool: event.tool, toolUseId: event.toolUseId, success: success)
             session.clearPendingQuestions()
-            session.updateTask(.working)
+            if event.tool == "EnterPlanMode" {
+                session.updateTask(.planning)
+            } else if event.tool == "ExitPlanMode" {
+                session.updateTask(inPlanMode ? .planning : .working)
+            } else {
+                session.updateTask(inPlanMode ? .planning : .working)
+            }
 
         case "Stop", "SubagentStop":
             session.clearPendingQuestions()

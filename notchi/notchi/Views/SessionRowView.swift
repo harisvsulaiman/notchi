@@ -67,6 +67,8 @@ struct SessionRowView: View {
             return TerminalColors.dimmedText
         case .working, .compacting:
             return TerminalColors.amber
+        case .planning:
+            return TerminalColors.planMode
         }
     }
 }

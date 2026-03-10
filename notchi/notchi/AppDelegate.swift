@@ -4,7 +4,9 @@ import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notchPanel: NotchPanel?
+    private var pillPanel: PillPanel?
     private let windowHeight: CGFloat = 500
+    private let pillWindowSize: CGFloat = 500
 
     private let updater: SPUUpdater
     private let userDriver: NotchUserDriver
@@ -56,7 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let screen = ScreenSelector.shared.selectedScreen else { return }
         NotchPanelManager.shared.updateGeometry(for: screen)
 
-        let panel = NotchPanel(frame: windowFrame(for: screen))
+        // Create notch panel
+        let panel = NotchPanel(frame: notchWindowFrame(for: screen))
 
         let contentView = NotchContentView()
         let hostingView = NSHostingView(rootView: contentView)
@@ -73,9 +76,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ])
 
         panel.contentView = hitTestView
-        panel.orderFrontRegardless()
-
         self.notchPanel = panel
+
+        // Create pill panel
+        let pill = PillPanel(frame: pillFrame(for: screen))
+
+        let pillContentView = PillContentView()
+        let pillHostingView = NSHostingView(rootView: pillContentView)
+
+        let pillHitTestView = PillHitTestView()
+        pillHitTestView.panelManager = NotchPanelManager.shared
+        pillHitTestView.addSubview(pillHostingView)
+        pillHostingView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            pillHostingView.topAnchor.constraint(equalTo: pillHitTestView.topAnchor),
+            pillHostingView.bottomAnchor.constraint(equalTo: pillHitTestView.bottomAnchor),
+            pillHostingView.leadingAnchor.constraint(equalTo: pillHitTestView.leadingAnchor),
+            pillHostingView.trailingAnchor.constraint(equalTo: pillHitTestView.trailingAnchor),
+        ])
+
+        pill.contentView = pillHitTestView
+        self.pillPanel = pill
+
+        // Wire up mode/corner change callbacks
+        NotchPanelManager.shared.onDisplayModeChanged = { [weak self] in
+            self?.showActivePanel()
+        }
+        NotchPanelManager.shared.onPillCornerChanged = { [weak self] in
+            guard let self, let screen = ScreenSelector.shared.selectedScreen else { return }
+            self.pillPanel?.setFrame(self.pillFrame(for: screen), display: true)
+        }
+
+        // Show the active panel
+        showActivePanel()
+    }
+
+    @MainActor private func showActivePanel() {
+        let mode = NotchPanelManager.shared.displayMode
+        if mode == .notch {
+            pillPanel?.alphaValue = 0
+            pillPanel?.orderOut(nil)
+            notchPanel?.alphaValue = 1
+            notchPanel?.orderFrontRegardless()
+        } else {
+            notchPanel?.alphaValue = 0
+            notchPanel?.orderOut(nil)
+            pillPanel?.alphaValue = 1
+            pillPanel?.orderFrontRegardless()
+        }
     }
 
     private func observeScreenChanges() {
@@ -89,22 +137,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func repositionWindow() {
         MainActor.assumeIsolated {
-            guard let panel = notchPanel else { return }
             ScreenSelector.shared.refreshScreens()
             guard let screen = ScreenSelector.shared.selectedScreen else { return }
 
             NotchPanelManager.shared.updateGeometry(for: screen)
-            panel.setFrame(windowFrame(for: screen), display: true)
+            notchPanel?.setFrame(notchWindowFrame(for: screen), display: true)
+            pillPanel?.setFrame(pillFrame(for: screen), display: true)
         }
     }
 
-    private func windowFrame(for screen: NSScreen) -> NSRect {
+    private func notchWindowFrame(for screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
         return NSRect(
             x: screenFrame.origin.x,
             y: screenFrame.maxY - windowHeight,
             width: screenFrame.width,
             height: windowHeight
+        )
+    }
+
+    private func pillFrame(for screen: NSScreen) -> NSRect {
+        // Use the full screen frame so the pill can appear below the dock
+        let frame = screen.frame
+        return NSRect(
+            x: frame.origin.x,
+            y: frame.origin.y,
+            width: frame.width,
+            height: frame.height
         )
     }
 
