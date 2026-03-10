@@ -132,6 +132,7 @@ struct PillContentView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 36)
+        .contentShape(Capsule())
         .onTapGesture {
             panelManager.expand()
         }
