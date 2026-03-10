@@ -19,15 +19,18 @@ struct JostlingSpritesView: View {
                 SessionSpriteView(state: sessions[0].state, isSelected: true)
                     .frame(width: 18, height: 18)
             } else {
+                let leftSleeping = sessions[0].task == .sleeping
+                let rightSleeping = sessions[1].task == .sleeping
+
                 // Left sprite: steps forward (up) when phase = 0
                 SessionSpriteView(state: sessions[0].state, isSelected: true)
                     .frame(width: 18, height: 18)
-                    .offset(y: -3 * (1 - phase))
+                    .offset(y: leftSleeping ? 0 : -3 * (1 - phase))
 
                 // Right sprite: steps forward (up) when phase = 1
                 SessionSpriteView(state: sessions[1].state, isSelected: true)
                     .frame(width: 18, height: 18)
-                    .offset(y: -3 * phase)
+                    .offset(y: rightSleeping ? 0 : -3 * phase)
             }
         }
         .allowsHitTesting(false)
