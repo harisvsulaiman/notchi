@@ -1,67 +1,56 @@
 import SwiftUI
 
-/// Displays up to 2 session sprites. When there are 2, they jostle and bump
-/// into each other as if fighting for the user's attention.
+/// Displays up to 2 session sprites side by side. When there are 2, they
+/// take turns stepping forward as if fighting for the user's attention.
 struct JostlingSpritesView: View {
     let sessions: [SessionData]
 
-    @State private var jostlePhase: CGFloat = 0
+    /// 0 = left sprite forward, 1 = right sprite forward
+    @State private var phase: CGFloat = 0
 
     private var isFighting: Bool { sessions.count >= 2 }
 
     var body: some View {
-        ZStack {
-            ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
-                SessionSpriteView(
-                    state: session.state,
-                    isSelected: index == 0
-                )
-                .frame(width: 18, height: 18)
-                .offset(
-                    x: spriteX(index: index),
-                    y: spriteY(index: index)
-                )
-                .zIndex(index == 0 ? 1 : 0)
+        HStack(spacing: 4) {
+            if sessions.isEmpty {
+                SessionSpriteView(state: .idle, isSelected: true)
+                    .frame(width: 18, height: 18)
+            } else if sessions.count == 1 {
+                SessionSpriteView(state: sessions[0].state, isSelected: true)
+                    .frame(width: 18, height: 18)
+            } else {
+                // Left sprite: steps forward (up) when phase = 0
+                SessionSpriteView(state: sessions[0].state, isSelected: true)
+                    .frame(width: 18, height: 18)
+                    .offset(y: -3 * (1 - phase))
+
+                // Right sprite: steps forward (up) when phase = 1
+                SessionSpriteView(state: sessions[1].state, isSelected: true)
+                    .frame(width: 18, height: 18)
+                    .offset(y: -3 * phase)
             }
         }
-        .frame(width: isFighting ? 30 : 18, height: 18)
+        .allowsHitTesting(false)
         .onAppear {
             guard isFighting else { return }
-            withAnimation(
-                .easeInOut(duration: 0.6)
-                .repeatForever(autoreverses: true)
-            ) {
-                jostlePhase = 1
-            }
+            startFighting()
         }
         .onChange(of: sessions.count) { _, count in
             if count >= 2 {
-                jostlePhase = 0
-                withAnimation(
-                    .easeInOut(duration: 0.6)
-                    .repeatForever(autoreverses: true)
-                ) {
-                    jostlePhase = 1
-                }
+                startFighting()
             } else {
-                jostlePhase = 0
+                phase = 0
             }
         }
     }
 
-    private func spriteX(index: Int) -> CGFloat {
-        guard isFighting else { return 0 }
-        // Base spread: sprites sit apart
-        let base: CGFloat = index == 0 ? -4 : 8
-        // Bump toward each other then apart
-        let bump: CGFloat = index == 0 ? 3 : -3
-        return base + bump * jostlePhase
-    }
-
-    private func spriteY(index: Int) -> CGFloat {
-        guard isFighting else { return 0 }
-        // Alternating vertical pop — one goes up while the other goes down
-        let lift: CGFloat = index == 0 ? -2 : 1
-        return lift * jostlePhase
+    private func startFighting() {
+        phase = 0
+        withAnimation(
+            .easeInOut(duration: 0.8)
+            .repeatForever(autoreverses: true)
+        ) {
+            phase = 1
+        }
     }
 }
