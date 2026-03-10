@@ -236,12 +236,13 @@ struct NotchContentView: View {
         sessionStore.sortedSessions.first?.state ?? .idle
     }
 
+    private var headerSessions: [SessionData] {
+        Array(sessionStore.sortedSessions.prefix(2))
+    }
+
     @ViewBuilder
     private var headerSprites: some View {
-        SessionSpriteView(
-            state: currentHeaderState,
-            isSelected: true
-        )
+        JostlingSpritesView(sessions: headerSessions)
     }
 
     private func openSettings() {

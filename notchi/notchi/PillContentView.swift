@@ -22,6 +22,10 @@ struct PillContentView: View {
         sessionStore.sortedSessions.first
     }
 
+    private var headerSessions: [SessionData] {
+        Array(sessionStore.sortedSessions.prefix(2))
+    }
+
     private var statusColor: Color {
         guard let session = topSession else { return TerminalColors.green }
         switch session.task {
@@ -116,11 +120,7 @@ struct PillContentView: View {
 
     private var collapsedPill: some View {
         HStack(spacing: 8) {
-            SessionSpriteView(
-                state: topSession?.state ?? .idle,
-                isSelected: true
-            )
-            .frame(width: 18, height: 18)
+            JostlingSpritesView(sessions: headerSessions)
 
             if showSpeechBubble {
                 Image(systemName: "bubble.left.fill")
